@@ -46,4 +46,29 @@ public class StudyManager {
         }
         return Collections.emptySet();
     }
+
+    // 스터디 참여자 모두가 선택한 전체 시간대 집계 (빈도순으로 정렬)
+    public List<Map.Entry<TimeSlot, Integer>> getTimeSlotFrequency(StudyGroup group) {
+        Map<TimeSlot, Integer> freq = new HashMap<>();
+        for (StudyMember member : group.getMembers()) {
+            for (TimeSlot slot : group.getSchedule().getAvailabilityOf(member)) {
+                freq.put(slot, freq.getOrDefault(slot, 0) + 1);
+            }
+        }
+        List<Map.Entry<TimeSlot, Integer>> sorted = new ArrayList<>(freq.entrySet());
+        sorted.sort((a, b) -> b.getValue() - a.getValue());
+        return sorted;
+    }
+
+    // 스터디 리더가 수동으로 특정 시간대를 확정할 수 있게 설정
+    public void confirmStudyTime(StudyGroup group, User leader, Set<TimeSlot> selected) {
+        if (group.getLeader().equals(leader)) {
+            group.getSchedule().setConfirmedTimeSlots(selected);
+        }
+    }
+
+    // 확정된 시간대 반환
+    public Set<TimeSlot> getConfirmedTimeSlots(StudyGroup group) {
+        return group.getSchedule().getConfirmedTimeSlots();
+    }
 }
