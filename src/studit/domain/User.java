@@ -31,6 +31,10 @@ public class User implements Serializable {
         return profile;
     }
 
+    public void setProfile(Profile profile) {
+        this.profile = profile;
+    }
+
     @Override
     public String toString() {
         return String.format("이름: %s, 학번: %s, 전공: %s\n%s",

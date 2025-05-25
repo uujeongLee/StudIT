@@ -1,0 +1,4 @@
+# Java 컴파일 결과 무시
+*.class
+/out/
+/build/

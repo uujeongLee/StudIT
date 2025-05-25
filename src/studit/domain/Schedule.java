@@ -41,6 +41,10 @@ public class Schedule implements Serializable {
         return confirmedTimeSlots;
     }
 
+    public void addConfirmedTimeSlot(TimeSlot slot) {
+        this.confirmedTimeSlots.add(slot);
+    }
+
     public Set<StudyMember> getMembers() {
         return memberAvailability.keySet();
     }
