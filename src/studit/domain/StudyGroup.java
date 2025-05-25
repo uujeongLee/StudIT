@@ -37,7 +37,7 @@ public class StudyGroup implements Serializable {
         return members.size() >= maxSize;
     }
 
-    public String getSubject() {
+    public String getSubzject() {
         return subject;
     }
 
