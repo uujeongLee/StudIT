@@ -1,17 +1,15 @@
 package studit;
 
 import studit.domain.*;
-import studit.service.StudyRecommender;
-import studit.service.StudySearchEngine;
+import studit.service.*;
 
 import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
-        // 리더 생성
+        // 리더 및 스터디 그룹 생성
         User leader = new User("김리더", "20201111", "인공지능공학부");
 
-        // 스터디 그룹 생성
         StudyGroup group1 = new StudyGroup("AI 스터디", "온라인", Set.of("인공지능", "딥러닝"), 5, leader);
         group1.getSchedule().addConfirmedTimeSlot(new TimeSlot("월", "10:00~12:00"));
 
@@ -53,7 +51,15 @@ public class Main {
         StudyRecommender recommender = new StudyRecommender();
         List<StudyGroup> recommendations = recommender.recommendByTags(currentUser, allGroups);
 
-        System.out.println("\n🎯 관심 태그 기반 추천 결과:");
+        System.out.println("\n 관심 태그 기반 추천 결과:");
         recommendations.forEach(group -> System.out.println(" - " + group.getSubject()));
+
+        // 병렬 추천 + 검색 통합 테스트
+        System.out.println("\n=============================");
+        System.out.println("⚡ 병렬 추천 및 검색 결과 (ExecutorService)");
+        System.out.println("=============================\n");
+
+        ParallelStudyProcessor processor = new ParallelStudyProcessor();
+        processor.runParallelSearch(currentUser, allGroups, "AI", "딥러닝", "월");
     }
 }
