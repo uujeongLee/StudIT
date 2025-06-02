@@ -40,16 +40,16 @@ public class ParallelStudyProcessor {
             List<StudyGroup> dayMatches = dayFuture.get();
 
             // 결과 출력
-            System.out.println("✅ 추천 스터디 (" + recommended.size() + "개):");
+            System.out.println("추천 스터디 (" + recommended.size() + "개):");
             printGroups(recommended);
 
-            System.out.println("\n🔍 과목명 검색 결과 (" + subjectMatches.size() + "개):");
+            System.out.println("\n과목명 검색 결과 (" + subjectMatches.size() + "개):");
             printGroups(subjectMatches);
 
-            System.out.println("\n🔍 태그 검색 결과 (" + tagMatches.size() + "개):");
+            System.out.println("\n태그 검색 결과 (" + tagMatches.size() + "개):");
             printGroups(tagMatches);
 
-            System.out.println("\n🔍 요일 검색 결과 (" + dayMatches.size() + "개):");
+            System.out.println("\n요일 검색 결과 (" + dayMatches.size() + "개):");
             printGroups(dayMatches);
 
         } catch (InterruptedException | ExecutionException e) {
