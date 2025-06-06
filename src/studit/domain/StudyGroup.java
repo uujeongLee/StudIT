@@ -12,6 +12,10 @@ public class StudyGroup implements Serializable {
     private List<StudyMember> members;
     private Schedule schedule;
 
+    // 🔒 Thread-safe를 위한 락과 대기열
+    private final Queue<User> waitlist = new LinkedList<>();
+    private final Object lock = new Object();
+
     public StudyGroup(String subject, String mode, Set<String> tags, int maxSize, User leader) {
         this.subject = subject;
         this.mode = mode;
@@ -22,10 +26,32 @@ public class StudyGroup implements Serializable {
         this.schedule = new Schedule();
     }
 
+    // ✅ Thread-safe 스터디 신청 메서드
     public boolean apply(User user) {
-        if (isFull() || isMember(user)) return false;
-        members.add(new StudyMember(user));
-        return true;
+        synchronized (lock) {
+            if (isMember(user)) return false;
+
+            if (members.size() < maxSize) {
+                members.add(new StudyMember(user));
+                System.out.println("✅ 스터디 가입 완료: " + user.getName());
+                return true;
+            } else {
+                waitlist.add(user);
+                System.out.println("📋 대기열에 추가됨: " + user.getName());
+                return false;
+            }
+        }
+    }
+
+    // ❗ 정원 이탈 시 대기자 승격 메서드 (옵션)
+    public void promoteFromWaitlist() {
+        synchronized (lock) {
+            while (!isFull() && !waitlist.isEmpty()) {
+                User next = waitlist.poll();
+                members.add(new StudyMember(next));
+                System.out.println("⏫ 대기자 승격됨: " + next.getName());
+            }
+        }
     }
 
     public boolean isMember(User user) {
@@ -63,6 +89,10 @@ public class StudyGroup implements Serializable {
 
     public Schedule getSchedule() {
         return schedule;
+    }
+
+    public Queue<User> getWaitlist() {
+        return waitlist;
     }
 
     @Override
