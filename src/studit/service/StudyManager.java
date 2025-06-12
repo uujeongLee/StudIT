@@ -2,22 +2,33 @@ package studit.service;
 
 import studit.domain.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class StudyManager {
 
-    // 사용자가 참여한 스터디 목록 필터링
-    public List<StudyGroup> getMyStudies(List<StudyGroup> allGroups, User user) {
-        List<StudyGroup> result = new ArrayList<>();
-        for (StudyGroup group : allGroups) {
-            for (StudyMember member : group.getMembers()) {
-                if (member.getUser().equals(user)) {
-                    result.add(group);
-                    break;
-                }
-            }
-        }
-        return result;
+    private final List<StudyGroup> allGroups = new ArrayList<>();
+
+    public StudyGroup createStudyGroup(String subject, String mode, Set<String> tags, int maxSize, User leader, String description, Set<TimeSlot> timeSlots) {
+        StudyGroup group = new StudyGroup(subject, mode, tags, maxSize, leader, description, timeSlots);
+        allGroups.add(group);
+        return group;
     }
+
+    public List<StudyGroup> getAllStudyGroups() {
+        return Collections.unmodifiableList(allGroups);
+    }
+
+    // 사용자가 참여한 스터디 또는 대기중인 스터디 목록 필터링
+    public List<StudyGroup> getMyStudies(List<StudyGroup> allGroups, User user) {
+        return allGroups.stream()
+                .filter(group ->
+                        group.isMember(user) ||
+                                group.getWaitlist().stream()
+                                        .anyMatch(u -> u.getStudentId().equals(user.getStudentId()))
+                )
+                .collect(Collectors.toList());
+    }
+
 
     // 특정 스터디에서 현재 사용자 자신의 가능한 시간대 가져오기
     public Set<TimeSlot> getMyAvailableTimes(StudyGroup group, User user) {
@@ -71,4 +82,37 @@ public class StudyManager {
     public Set<TimeSlot> getConfirmedTimeSlots(StudyGroup group) {
         return group.getSchedule().getConfirmedTimeSlots();
     }
+
+    public boolean joinStudy(User user, StudyGroup studyGroup) {
+        if (user == null || studyGroup == null) {
+            return false;
+        }
+
+        // 동기화를 통한 데이터 일관성 보장
+        synchronized (studyGroup) {
+            // 이미 가입된 사용자인지 확인
+            if (studyGroup.isMember(user)) {
+                return false; // 이미 가입됨
+            }
+
+            // 대기열에 있는지 확인
+            if (studyGroup.getWaitlist().contains(user)) {
+                return false; // 이미 대기열에 있음
+            }
+
+            // 정원 초과 확인
+            if (studyGroup.getMembers().size() >= studyGroup.getMaxSize()) {
+                // 대기열에 추가
+                studyGroup.getWaitlist().add(user);
+                return true; // 대기열 추가 성공
+            }
+
+            // 스터디 멤버로 추가
+            StudyMember newMember = new StudyMember(user);
+            studyGroup.getMembers().add(newMember);
+            return true; // 가입 성공
+        }
+    }
+
+
 }

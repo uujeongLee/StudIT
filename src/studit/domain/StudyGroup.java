@@ -1,3 +1,4 @@
+// StudyGroup.java
 package studit.domain;
 
 import java.io.Serializable;
@@ -11,45 +12,56 @@ public class StudyGroup implements Serializable {
     private int maxSize;
     private List<StudyMember> members;
     private Schedule schedule;
-
-    // 🔒 Thread-safe를 위한 락과 대기열
+    private String description;
+    private Set<TimeSlot> timeSlots;
     private final Queue<User> waitlist = new LinkedList<>();
     private final Object lock = new Object();
 
-    public StudyGroup(String subject, String mode, Set<String> tags, int maxSize, User leader) {
+    public StudyGroup(
+            String subject, String mode, Set<String> tags, int maxSize,
+            User leader, String description, Set<TimeSlot> timeSlots) {
         this.subject = subject;
         this.mode = mode;
         this.tags = tags;
         this.maxSize = maxSize;
         this.leader = leader;
         this.members = new ArrayList<>();
-        this.schedule = new Schedule();
+        this.description = description;
+        this.timeSlots = timeSlots;
+
+        // TimeSlot 정보를 포함한 Schedule 생성
+        this.schedule = new Schedule(timeSlots);
+
+        // 리더를 자동으로 멤버로 추가
+        this.members.add(new StudyMember(leader));
     }
 
-    // ✅ Thread-safe 스터디 신청 메서드
+
+    public boolean isInWaitlist(User user) {
+        return waitlist.stream()
+                .anyMatch(u -> u.getStudentId().equals(user.getStudentId()));
+    }
+
     public boolean apply(User user) {
         synchronized (lock) {
-            if (isMember(user)) return false;
-
+            if (isMember(user) || isInWaitlist(user)) {
+                return false;
+            }
             if (members.size() < maxSize) {
                 members.add(new StudyMember(user));
-                System.out.println("✅ 스터디 가입 완료: " + user.getName());
                 return true;
             } else {
                 waitlist.add(user);
-                System.out.println("📋 대기열에 추가됨: " + user.getName());
                 return false;
             }
         }
     }
 
-    // ❗ 정원 이탈 시 대기자 승격 메서드 (옵션)
     public void promoteFromWaitlist() {
         synchronized (lock) {
             while (!isFull() && !waitlist.isEmpty()) {
                 User next = waitlist.poll();
                 members.add(new StudyMember(next));
-                System.out.println("⏫ 대기자 승격됨: " + next.getName());
             }
         }
     }
@@ -95,9 +107,29 @@ public class StudyGroup implements Serializable {
         return waitlist;
     }
 
+    public String getDescription() { return description; }
+
+    public Set<TimeSlot> getTimeSlots() { return timeSlots; }
+
     @Override
     public String toString() {
         return String.format("스터디 과목: %s, 방식: %s, 인원: %d/%d, 태그: %s, 리더: %s",
                 subject, mode, members.size(), maxSize, tags, leader.getName());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StudyGroup that = (StudyGroup) o;
+        return Objects.equals(subject, that.subject)
+                && Objects.equals(mode, that.mode)
+                && Objects.equals(tags, that.tags)
+                && Objects.equals(leader != null ? leader.getStudentId() : null, that.leader != null ? that.leader.getStudentId() : null);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(subject, mode, tags, leader != null ? leader.getStudentId() : null);
     }
 }

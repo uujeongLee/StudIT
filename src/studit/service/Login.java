@@ -38,4 +38,8 @@ public class Login {
     public User getCurrentUser() {
         return currentUser;
     }
+
+    public User getUserByEmail(String email) {
+        return users.get(email);
+    }
 }

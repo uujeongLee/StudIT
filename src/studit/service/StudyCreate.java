@@ -6,13 +6,16 @@ import java.util.*;
 public class StudyCreate {
 
     // 스터디 생성
-    public StudyGroup createStudyGroup(String subject, String mode, Set<String> tags, int maxSize, User leader, Set<TimeSlot> availableTimes) {
-        StudyGroup group = new StudyGroup(subject, mode, tags, maxSize, leader);
+    public StudyGroup createStudyGroup(
+            String subject, String mode, Set<String> tags, int maxSize, User leader,
+            String description, Set<TimeSlot> timeSlots)
+    {
+        StudyGroup group = new StudyGroup(subject, mode, tags, maxSize, leader, description, timeSlots);
         group.apply(leader);  // 리더도 멤버로 등록
 
         // 리더의 가능 시간 등록
         StudyManager manager = new StudyManager();
-        manager.updateMyAvailableTimes(group, leader, availableTimes);
+        manager.updateMyAvailableTimes(group, leader, timeSlots);
 
         return group;
     }
@@ -25,6 +28,8 @@ public class StudyCreate {
         System.out.println("태그: " + group.getTags());
         System.out.println("정원: " + group.getMaxSize());
         System.out.println("리더: " + group.getLeader().getName());
+        System.out.println("설명: " + group.getDescription());
+        System.out.println("시간대: " + group.getTimeSlots());
 
         System.out.println("가능 시간대 (리더):");
         for (TimeSlot slot : group.getSchedule().getAvailabilityOf(group.getMembers().get(0))) {

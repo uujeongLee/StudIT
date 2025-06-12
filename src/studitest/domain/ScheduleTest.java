@@ -17,7 +17,7 @@ public class ScheduleTest {
         m2.addAvailableTime(new TimeSlot("수", "14:00~16:00"));
         m2.addAvailableTime(new TimeSlot("금", "10:00~12:00"));
 
-        // ✅ Schedule 생성 및 등록
+        // ✅ schedule 생성 및 등록
         Schedule schedule = new Schedule();
         schedule.registerAvailability(m1, m1.getAvailableTimes());
         schedule.registerAvailability(m2, m2.getAvailableTimes());
@@ -26,7 +26,7 @@ public class ScheduleTest {
         Set<TimeSlot> recommended = schedule.computeRecommendedTimeSlots();
 
         // ✅ 출력
-        System.out.println("\n✅ [Schedule 추천 시간대 테스트]");
+        System.out.println("\n✅ [schedule 추천 시간대 테스트]");
         System.out.println("스터디원 수: " + schedule.getMembers().size());
 
         System.out.println("\n📅 추천 시간대:");
