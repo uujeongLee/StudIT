@@ -109,31 +109,19 @@ public class StudyManager {
             return false;
         }
 
-        // 동기화를 통한 데이터 일관성 보장
         synchronized (studyGroup) {
-            // 이미 가입된 사용자인지 확인
-            if (studyGroup.isMember(user)) {
-                return false; // 이미 가입됨
-            }
-
-            // 대기열에 있는지 확인
-            if (studyGroup.getWaitlist().contains(user)) {
-                return false; // 이미 대기열에 있음
-            }
-
-            // 정원 초과 확인
+            // 정원 초과 여부만 판단
             if (studyGroup.getMembers().size() >= studyGroup.getMaxSize()) {
-                // 대기열에 추가
                 studyGroup.getWaitlist().add(user);
-                return true; // 대기열 추가 성공
+                return false; // 대기열 추가
             }
 
             // 스터디 멤버로 추가
-            StudyMember newMember = new StudyMember(user);
-            studyGroup.getMembers().add(newMember);
+            studyGroup.getMembers().add(new StudyMember(user));
             return true; // 가입 성공
         }
     }
+
 
 
 }

@@ -65,8 +65,6 @@ public class HomePanel extends JPanel {
         // StudyListPanel에 StudyManager 직접 전달하여 실시간 데이터 사용
         studyListPanel = new StudyListPanel(user, studyManager, recommender, searchEngine);
 
-        // 스터디 가입 콜백 연결
-        studyListPanel.setOnStudyJoined(this::handleJoinStudy);
 
         // 헤더 패널의 검색 및 필터 기능 연결
         headerPanel.setOnSearch(studyListPanel::filterByKeyword);
@@ -104,49 +102,7 @@ public class HomePanel extends JPanel {
      * 스터디 가입 처리 메서드
      * @param studyGroup 가입할 스터디 그룹
      */
-    private void handleJoinStudy(StudyGroup studyGroup) {
-        if (studyGroup == null || user == null) {
-            JOptionPane.showMessageDialog(this,
-                    "스터디 가입 중 오류가 발생했습니다.",
-                    "오류",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
 
-        try {
-            boolean success = studyManager.joinStudy(user, studyGroup);
-
-            if (success) {
-                // 상위 컴포넌트에 가입 완료 알림
-                if (onStudyJoined != null) {
-                    onStudyJoined.accept(studyGroup);
-                }
-            } else {
-                // 가입 실패 처리
-                String errorMessage;
-                if (studyGroup.isMember(user)) {
-                    errorMessage = "이미 가입된 스터디입니다.";
-                } else if (studyGroup.getWaitlist().contains(user)) {
-                    errorMessage = "이미 대기열에 등록되어 있습니다.";
-                } else {
-                    errorMessage = "스터디 가입에 실패했습니다.";
-                }
-
-                JOptionPane.showMessageDialog(this,
-                        errorMessage,
-                        "가입 실패",
-                        JOptionPane.WARNING_MESSAGE);
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
-                    "스터디 가입 중 오류가 발생했습니다: " + e.getMessage(),
-                    "시스템 오류",
-                    JOptionPane.ERROR_MESSAGE);
-
-            System.err.println("Study join error: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
 
     /**
      * 현재 사용자 반환

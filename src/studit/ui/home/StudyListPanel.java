@@ -196,78 +196,35 @@ public class StudyListPanel extends JPanel {
             return;
         }
 
-        // 이미 가입된 스터디인지 확인
-        if (studyGroup.isMember(currentUser)) {
-            JOptionPane.showMessageDialog(this,
-                    "이미 가입된 스터디입니다.",
-                    "알림",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        // 대기열에 이미 있는지 확인
-        if (studyGroup.getWaitlist().contains(currentUser)) {
-            JOptionPane.showMessageDialog(this,
-                    "이미 대기열에 등록되어 있습니다.",
-                    "대기 중",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
         try {
-            // StudyManager를 통한 스터디 가입 처리
+            // 1. 모든 중복 체크 제거 후 바로 신청 처리
             boolean success = studyManager.joinStudy(currentUser, studyGroup);
 
-            if (success) {
-                // 가입 성공 메시지
-                String message;
-                if (studyGroup.getMembers().size() >= studyGroup.getMaxSize()) {
-                    message = "정원이 초과되어 대기열에 추가되었습니다.\n다른 멤버가 나가면 자동으로 가입됩니다.";
-                } else {
-                    message = studyGroup.getSubject() + " 스터디에 성공적으로 가입되었습니다!";
-                }
+            // 2. 결과 메시지 간소화
+            String message = success ?
+                    "'" + studyGroup.getSubject() + "' 스터디 가입 완료!" :
+                    "정원 초과로 대기열에 추가되었습니다.";
 
-                JOptionPane.showMessageDialog(this,
-                        message,
-                        "가입 완료",
-                        JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    message,
+                    success ? "가입 성공" : "대기열 추가",
+                    success ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
 
-                // 상위 컴포넌트에 가입 완료 알림 (핵심!)
-                if (onStudyJoined != null) {
-                    onStudyJoined.accept(studyGroup);
-                }
-
-                // UI 데이터 갱신 - refreshData() 메서드 사용
-                refreshData();
-
-            } else {
-                // 가입 실패 처리
-                String errorMessage = "스터디 가입에 실패했습니다.";
-
-                if (studyGroup.isMember(currentUser)) {
-                    errorMessage = "이미 가입된 스터디입니다.";
-                } else if (studyGroup.getWaitlist().contains(currentUser)) {
-                    errorMessage = "이미 대기열에 등록되어 있습니다.";
-                } else {
-                    errorMessage = "알 수 없는 오류로 가입에 실패했습니다.\n관리자에게 문의하세요.";
-                }
-
-                JOptionPane.showMessageDialog(this,
-                        errorMessage,
-                        "가입 실패",
-                        JOptionPane.ERROR_MESSAGE);
+            // 3. 성공 시 추가 액션
+            if (success && onStudyJoined != null) {
+                onStudyJoined.accept(studyGroup);
             }
+
+            refreshData();
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
-                    "스터디 가입 중 오류가 발생했습니다:\n" + e.getMessage(),
+                    "처리 중 오류 발생: " + e.getMessage(),
                     "시스템 오류",
                     JOptionPane.ERROR_MESSAGE);
-
-            System.err.println("Study join error: " + e.getMessage());
-            e.printStackTrace();
         }
     }
+
 
 
     private void updatePanel(JPanel content, List<StudyGroup> groups, boolean isMine) {

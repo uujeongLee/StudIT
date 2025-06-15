@@ -114,15 +114,6 @@ class StudyCardPanel extends JPanel {
             return;
         }
 
-        if (group.isMember(user)) {
-            JOptionPane.showMessageDialog(this, "이미 가입된 스터디입니다.", "중복 가입", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        if (group.isInWaitlist(user)) {
-            JOptionPane.showMessageDialog(this, "이미 대기열에 등록되어 있습니다.", "대기 중", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
 
         String confirmMessage = "'" + group.getSubject() + "' 스터디에 가입하시겠습니까?\n\n" +
                 "스터디 정보:\n" +
@@ -159,27 +150,23 @@ class StudyCardPanel extends JPanel {
         );
 
         if (option == JOptionPane.YES_OPTION) {
-            if (group.isMember(user) || group.isInWaitlist(user)) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "이미 신청한 스터디입니다.",
-                        "오류",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            } else {
-                boolean success = group.apply(user);
-                String message = success ?
-                        "'" + group.getSubject() + "' 스터디 가입이 완료되었습니다!" :
-                        "'" + group.getSubject() + "' 대기열에 추가되었습니다.";
-                JOptionPane.showMessageDialog(
-                        this,
-                        message,
-                        "알림",
-                        success ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE
-                );
-                refresh.run();
-            }
+            // 중복 체크 완전 제거 ➡ 바로 신청 처리
+            boolean success = group.apply(user);
+
+            String message = success ?
+                    "'" + group.getSubject() + "' 스터디 가입이 완료되었습니다!" :
+                    "'" + group.getSubject() + "' 대기열에 추가되었습니다.";
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    message,
+                    "알림",
+                    success ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE
+            );
+
+            refresh.run();
         }
+
     }
 
     private void showStudyDetails(StudyGroup group) {
