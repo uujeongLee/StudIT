@@ -1,5 +1,9 @@
 package studit.service;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+
 import studit.domain.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -7,6 +11,10 @@ import java.util.stream.Collectors;
 public class StudyManager {
 
     private final List<StudyGroup> allGroups = new ArrayList<>();
+
+    // StudyManager.java 내부
+    private static final Map<String, Set<TimeSlot>> userAvailabilityStore = new HashMap<>();
+
 
     public StudyGroup createStudyGroup(String subject, String mode, Set<String> tags, int maxSize, User leader, String description, Set<TimeSlot> timeSlots) {
         StudyGroup group = new StudyGroup(subject, mode, tags, maxSize, leader, description, timeSlots);
@@ -17,6 +25,11 @@ public class StudyManager {
     public List<StudyGroup> getAllStudyGroups() {
         return Collections.unmodifiableList(allGroups);
     }
+
+    public static Map<String, Set<TimeSlot>> getUserAvailabilityStore() {
+        return userAvailabilityStore;
+    }
+
 
     // 사용자가 참여한 스터디 또는 대기중인 스터디 목록 필터링
     public List<StudyGroup> getMyStudies(List<StudyGroup> allGroups, User user) {
@@ -75,6 +88,14 @@ public class StudyManager {
     public void confirmStudyTime(StudyGroup group, User leader, Set<TimeSlot> selected) {
         if (group.getLeader().equals(leader)) {
             group.getSchedule().setConfirmedTimeSlots(selected);
+        }
+    }
+    public void saveToFile() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("availability.dat"))) {
+            oos.writeObject(userAvailabilityStore);
+            System.out.println("💾 저장 완료: " + userAvailabilityStore);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

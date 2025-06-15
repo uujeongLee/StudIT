@@ -137,6 +137,14 @@ public class CustomCalendarPanel extends JPanel {
         for (Object[] row : rows) model.addRow(row);
     }
 
+    public LocalDate getSelectedDate() {
+        // 선택된 날짜 하나를 반환하거나 기본값 제공
+        if (!selectedDates.isEmpty()) {
+            return selectedDates.iterator().next(); // 첫 번째 선택 날짜 반환
+        }
+        return LocalDate.now(); // 기본값
+    }
+
     public Set<LocalDate> getSelectedDates() { return selectedDates; }
 
     private class ModernCalendarCellRenderer extends DefaultTableCellRenderer {

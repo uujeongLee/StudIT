@@ -81,12 +81,7 @@ public class PersonalAvailabilityPanel extends JPanel {
                 cellPanel.setBorder(BorderFactory.createLineBorder(new Color(221, 230, 237)));
 
                 if (mySlots.contains(slot)) {
-                    // 선택된 시간: 파란색 계열
-                    cellPanel.setBackground(new Color(144, 190, 224));
-                    JLabel checkLabel = new JLabel("✓", SwingConstants.CENTER);
-                    checkLabel.setFont(new Font("맑은 고딕", Font.BOLD, 16));
-                    checkLabel.setForeground(Color.WHITE);
-                    cellPanel.add(checkLabel);
+                    cellPanel.setBackground(new Color(70, 130, 255));
                 } else {
                     cellPanel.setBackground(Color.WHITE);
                 }

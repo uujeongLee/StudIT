@@ -36,6 +36,13 @@ public class StudyGroup implements Serializable {
         this.members.add(new StudyMember(leader));
     }
 
+    public void setSchedule(Schedule schedule) {
+        this.schedule = schedule;
+    }
+
+    public void addMember(User user) {
+        this.members.add(new StudyMember(user));
+    }
 
     public boolean isInWaitlist(User user) {
         return waitlist.stream()
@@ -113,8 +120,7 @@ public class StudyGroup implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("스터디 과목: %s, 방식: %s, 인원: %d/%d, 태그: %s, 리더: %s",
-                subject, mode, members.size(), maxSize, tags, leader.getName());
+        return subject;
     }
 
     @Override

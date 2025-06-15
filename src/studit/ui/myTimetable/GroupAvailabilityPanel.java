@@ -77,11 +77,12 @@ public class GroupAvailabilityPanel extends JPanel {
                 cellPanel.setBackground(Color.WHITE);
 
                 if (confirmedSlots.contains(slot)) {
-                    // 확정된 시간: 진한 보라색
-                    cellPanel.setBackground(new Color(108, 46, 181));
-                    JLabel confirmLabel = new JLabel("✓", SwingConstants.CENTER);
-                    confirmLabel.setForeground(Color.WHITE);
-                    confirmLabel.setFont(new Font("맑은 고딕", Font.BOLD, 16));
+                    // 확정된 시간: 진한 파란색
+                    cellPanel.setBackground(new Color(70, 130, 255));
+
+                    JLabel confirmLabel = new JLabel("확정", SwingConstants.CENTER); // ✅ 이 줄 삭제
+                    confirmLabel.setForeground(Color.WHITE);                       // ✅ 삭제
+                    confirmLabel.setFont(new Font("맑은 고딕", Font.BOLD, 16));     // ✅ 삭제
                     cellPanel.add(confirmLabel);
                 } else {
                     int availability = freq.getOrDefault(slot, 0);

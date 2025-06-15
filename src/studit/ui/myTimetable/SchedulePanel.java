@@ -152,6 +152,18 @@ public class SchedulePanel extends JPanel {
         }
 
         User currentUser = loginService.getCurrentUser();
+        StudyMember myMember = selected.getMembers().stream()
+                .filter(m -> m.getUser().equals(currentUser))
+                .findFirst()
+                .orElse(null);
+
+        System.out.println("현재 선택된 그룹: " + selected.getSubject());
+        if (myMember != null) {
+            System.out.println("개인 가능 시간: " + selected.getSchedule().getAvailabilityOf(myMember));
+        } else {
+            System.out.println("⚠️ 현재 유저는 이 그룹에 속해있지 않습니다.");
+        }
+        System.out.println("확정 시간: " + selected.getSchedule().getConfirmedTimeSlots());
 
         viewPanel.removeAll();
 

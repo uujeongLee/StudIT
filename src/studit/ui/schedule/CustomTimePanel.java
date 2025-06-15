@@ -28,22 +28,25 @@ public class CustomTimePanel extends JPanel {
     private final List<StudyGroup> allGroups;
     private final Login loginService;
     private final StudyManager studyManager;
+    private final OnCompleteListener completeListener;
 
     private final Map<TimeSlot, TimeSlotPanel> slotPanelMap = new HashMap<>();
     private static final Map<String, Set<TimeSlot>> userAvailabilityStore = new HashMap<>();
 
     private final Color startBlue = new Color(59, 130, 246);
 
-    public CustomTimePanel(List<StudyGroup> allGroups, Login loginService, StudyManager studyManager) {
+    public CustomTimePanel(List<StudyGroup> allGroups, Login loginService, StudyManager studyManager, OnCompleteListener listener) {
         this.allGroups = allGroups;
         this.loginService = loginService;
         this.studyManager = studyManager;
+        this.completeListener = listener;
 
         setLayout(new BorderLayout(10, 10));
         setBackground(Color.WHITE);
         loadFromFile();
         initComponents();
     }
+
 
     private void initComponents() {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
@@ -57,80 +60,54 @@ public class CustomTimePanel extends JPanel {
         selectLabel.setForeground(new Color(40, 40, 40));
 
         groupComboBox = new JComboBox<>();
-        groupComboBox.setBackground(new Color(246, 248, 250));
-        groupComboBox.setFont(new Font("맑은 고딕", Font.PLAIN, 15));
-        groupComboBox.setForeground(new Color(40, 40, 40));
         groupComboBox.setPreferredSize(new Dimension(250, 35));
-        groupComboBox.setBorder(BorderFactory.createLineBorder(new Color(220, 224, 230), 1));
-        groupComboBox.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof StudyGroup) {
-                    label.setText(((StudyGroup) value).getSubject());
-                }
-                label.setFont(new Font("맑은 고딕", Font.PLAIN, 15));
-                label.setForeground(new Color(40, 40, 40));
-                return label;
-            }
-        });
-
         User currentUser = loginService.getCurrentUser();
-        List<StudyGroup> myGroups = studyManager.getMyStudies(studyManager.getAllStudyGroups(), currentUser);
+        List<StudyGroup> myGroups = studyManager.getMyStudies(allGroups, currentUser);
         for (StudyGroup group : myGroups) {
             groupComboBox.addItem(group);
         }
 
-        JLabel memberLabel = new JLabel("참여 인원:");
-        memberLabel.setFont(new Font("맑은 고딕", Font.BOLD, 15));
-        memberLabel.setForeground(new Color(40, 40, 40));
-
         memberComboBox = new JComboBox<>();
-        memberComboBox.setBackground(new Color(246, 248, 250));
-        memberComboBox.setFont(new Font("맑은 고딕", Font.PLAIN, 15));
-        memberComboBox.setForeground(new Color(40, 40, 40));
         memberComboBox.setPreferredSize(new Dimension(100, 35));
-        memberComboBox.setBorder(BorderFactory.createLineBorder(new Color(220, 224, 230), 1));
-
-        groupComboBox.addActionListener(e -> updateMemberComboBox());
         updateMemberComboBox();
 
-        saveButton = new JButton("가능 시간 저장");
-        saveButton.setBackground(new Color(59, 130, 246));
-        saveButton.setForeground(Color.WHITE);
-        saveButton.setFont(new Font("맑은 고딕", Font.BOLD, 15));
-        saveButton.setFocusPainted(false);
-        saveButton.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
-        saveButton.addActionListener(e -> saveAvailability());
+        // ✅ CustomTimePanel.java (1단계)
+        saveButton = new JButton("가능 시간 저장 및 다음");
+        saveButton.addActionListener(e -> {
+            List<TimeSlot> selected = getSelectedTimeSlots();
+            if (selected.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "최소 1개 이상 선택해야 합니다");
+                return;
+            }
+            userAvailabilityStore.put(currentUser.getStudentId(), new HashSet<>(selected));
+            saveToFile();
+            completeListener.onComplete(selected); // ✅ 이 때 다음 화면으로
+        });
+
+
+        groupComboBox.addActionListener(e -> {
+            updateMemberComboBox();
+            buildTimeSlots();
+        });
 
         topPanel.add(selectLabel);
         topPanel.add(groupComboBox);
-        topPanel.add(memberLabel);
+        topPanel.add(new JLabel("참여 인원:"));
         topPanel.add(memberComboBox);
         topPanel.add(saveButton);
 
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
-        timePanel = new JPanel();
+        timePanel = new JPanel(new BorderLayout());
         timePanel.setBackground(Color.WHITE);
-        timePanel.setLayout(new BorderLayout());
         JScrollPane scrollPane = new JScrollPane(timePanel);
         scrollPane.setBorder(null);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        groupComboBox.addActionListener(e -> buildTimeSlots());
-
-        JPanel cardPanel = new JPanel(new BorderLayout());
-        cardPanel.setBackground(Color.WHITE);
-        cardPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 224, 230), 2),
-                BorderFactory.createEmptyBorder(32, 32, 32, 32)
-        ));
-        cardPanel.add(mainPanel, BorderLayout.CENTER);
-
-        add(cardPanel, BorderLayout.CENTER);
+        add(mainPanel, BorderLayout.CENTER);
         buildTimeSlots();
     }
+
 
     private void updateMemberComboBox() {
         StudyGroup selectedGroup = (StudyGroup) groupComboBox.getSelectedItem();
@@ -144,18 +121,11 @@ public class CustomTimePanel extends JPanel {
     }
 
     private void buildTimeSlots() {
-        Component[] components = timePanel.getComponents();
-        for (Component comp : components) {
-            timePanel.remove(comp);
-        }
-
+        timePanel.removeAll();
         slotPanelMap.clear();
 
         StudyGroup group = (StudyGroup) groupComboBox.getSelectedItem();
         if (group == null) return;
-
-        timePanel.removeAll();
-        slotPanelMap.clear();
 
         Set<LocalDate> dates = group.getSchedule().getCandidateDates();
         LocalTime start = group.getSchedule().getStartTime();
@@ -171,27 +141,9 @@ public class CustomTimePanel extends JPanel {
         JPanel grid = new JPanel(new GridLayout(rowCount + 1, colCount, 2, 2));
         grid.setBackground(Color.WHITE);
 
-        JLabel headerLabel = new JLabel("시간/날짜");
-        headerLabel.setFont(new Font("맑은 고딕", Font.BOLD, 15));
-        headerLabel.setForeground(new Color(40, 40, 40));
-        headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        headerLabel.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
-        headerLabel.setBackground(new Color(248, 249, 250));
-        headerLabel.setOpaque(true);
-        grid.add(headerLabel);
-
+        grid.add(new JLabel("시간/날짜", SwingConstants.CENTER));
         for (LocalDate date : sortedDates) {
-            JLabel label = new JLabel(
-                    "<html><center>" + date.getMonthValue() + "/" + date.getDayOfMonth() +
-                            "<br>" + getDayKorean(date.getDayOfWeek()) + "</center></html>"
-            );
-            label.setFont(new Font("맑은 고딕", Font.PLAIN, 15));
-            label.setForeground(new Color(40, 40, 40));
-            label.setHorizontalAlignment(SwingConstants.CENTER);
-            label.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
-            label.setBackground(new Color(248, 249, 250));
-            label.setOpaque(true);
-            grid.add(label);
+            grid.add(new JLabel(date.getMonthValue() + "/" + date.getDayOfMonth() + "(" + getDayKorean(date.getDayOfWeek()) + ")", SwingConstants.CENTER));
         }
 
         LocalTime time = start;
@@ -199,20 +151,9 @@ public class CustomTimePanel extends JPanel {
         Set<TimeSlot> mySlots = userAvailabilityStore.getOrDefault(currentUser.getStudentId(), new HashSet<>());
 
         for (int r = 0; r < rowCount; r++) {
-            String timeLabel = String.format("%02d:%02d", time.getHour(), time.getMinute());
-            JLabel tLabel = new JLabel(timeLabel);
-            tLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 15));
-            tLabel.setForeground(new Color(40, 40, 40));
-            tLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            tLabel.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
-            tLabel.setBackground(new Color(248, 249, 250));
-            tLabel.setOpaque(true);
-            grid.add(tLabel);
-
+            grid.add(new JLabel(time.toString(), SwingConstants.CENTER));
             for (LocalDate date : sortedDates) {
-                String day = getDayKorean(date.getDayOfWeek());
-                String slot = time + "-" + time.plusMinutes(30);
-                TimeSlot ts = new TimeSlot(day, slot);
+                TimeSlot ts = new TimeSlot(getDayKorean(date.getDayOfWeek()), time + "-" + time.plusMinutes(30));
                 TimeSlotPanel panel = new TimeSlotPanel();
                 if (mySlots.contains(ts)) {
                     panel.selected = true;
@@ -223,47 +164,31 @@ public class CustomTimePanel extends JPanel {
             }
             time = time.plusMinutes(30);
         }
-        timePanel.removeAll();
-        JScrollPane scrollPane = (JScrollPane) timePanel.getParent().getParent();
-        scrollPane.setViewportView(null);
+
         timePanel.add(grid, BorderLayout.CENTER);
         timePanel.revalidate();
         timePanel.repaint();
     }
 
     private String getDayKorean(DayOfWeek dayOfWeek) {
-        switch (dayOfWeek) {
-            case MONDAY: return "월";
-            case TUESDAY: return "화";
-            case WEDNESDAY: return "수";
-            case THURSDAY: return "목";
-            case FRIDAY: return "금";
-            case SATURDAY: return "토";
-            case SUNDAY: return "일";
-            default: return "";
-        }
+        return switch (dayOfWeek) {
+            case MONDAY -> "월";
+            case TUESDAY -> "화";
+            case WEDNESDAY -> "수";
+            case THURSDAY -> "목";
+            case FRIDAY -> "금";
+            case SATURDAY -> "토";
+            case SUNDAY -> "일";
+        };
     }
-
-    private void saveAvailability() {
-        StudyGroup group = (StudyGroup) groupComboBox.getSelectedItem();
-        User user = loginService.getCurrentUser();
-        if (group == null || user == null) return;
-
-        Set<TimeSlot> selected = new HashSet<>();
+    private List<TimeSlot> getSelectedTimeSlots() {
+        List<TimeSlot> selected = new ArrayList<>();
         for (Map.Entry<TimeSlot, TimeSlotPanel> entry : slotPanelMap.entrySet()) {
             if (entry.getValue().isSelected()) {
                 selected.add(entry.getKey());
             }
         }
-
-        if (selected.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "시간을 최소 1개 이상 선택해주세요.");
-            return;
-        }
-
-        userAvailabilityStore.put(user.getStudentId(), selected);
-        saveToFile();
-        JOptionPane.showMessageDialog(this, "내가 선택한 시간이 저장되었습니다!");
+        return selected;
     }
 
     private void saveToFile() {
@@ -274,29 +199,31 @@ public class CustomTimePanel extends JPanel {
         }
     }
 
+
     @SuppressWarnings("unchecked")
     private void loadFromFile() {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("availability.dat"))) {
-            userAvailabilityStore.putAll((Map<String, Set<TimeSlot>>) ois.readObject());
+            Object obj = ois.readObject();
+            if (obj instanceof Map<?, ?> map) {
+                userAvailabilityStore.clear();
+                for (Map.Entry<?, ?> entry : map.entrySet()) {
+                    if (entry.getKey() instanceof String && entry.getValue() instanceof Set<?> set) {
+                        userAvailabilityStore.put((String) entry.getKey(), (Set<TimeSlot>) set);
+                    }
+                }
+            }
         } catch (IOException | ClassNotFoundException e) {
             userAvailabilityStore.clear();
         }
     }
 
-    class TimeSlotPanel extends JPanel {
+    private class TimeSlotPanel extends JPanel {
         private boolean selected = false;
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            g.setColor(getBackground());
-            g.fillRect(0, 0, getWidth(), getHeight());
-        }
 
         public TimeSlotPanel() {
             setPreferredSize(new Dimension(60, 40));
             setBackground(Color.WHITE);
-            setOpaque(true); // ★ 이 줄을 반드시 추가!
+            setOpaque(true);
             setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
             addMouseListener(new MouseAdapter() {
                 @Override
@@ -305,7 +232,6 @@ public class CustomTimePanel extends JPanel {
                 }
             });
         }
-
 
         public boolean isSelected() {
             return selected;

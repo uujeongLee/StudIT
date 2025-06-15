@@ -30,7 +30,8 @@ public class StudyMember implements Serializable {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof StudyMember other)) return false;
-        return Objects.equals(user.getStudentId(), other.user.getStudentId());
+        StudyMember that = (StudyMember) obj;
+        return user.getStudentId().equals(that.user.getStudentId());
     }
 
     @Override

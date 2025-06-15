@@ -12,12 +12,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.LinkedHashSet;
 
-/**
- * 회의(스터디) 일정 추가 및 시간 후보 설정을 위한 패널 클래스입니다.
- * - 스터디 과목/참여 인원/방식/날짜/시간을 선택하고, 일정 생성을 진행할 수 있습니다.
- * - "회의 가능 시간 입력" 버튼을 누르면 CustomTimePanel로 전환되어 각 멤버의 가능 시간 입력이 이어집니다.
- * - StudyManager, Login 등 서비스와 연동하여 실시간 데이터로 동작합니다.
- */
 public class CreateSchedulePanel extends JPanel {
     private JComboBox<String> subjectComboBox;
     private JComboBox<String> memberComboBox;
@@ -41,14 +35,10 @@ public class CreateSchedulePanel extends JPanel {
         initComponents();
     }
 
-
     private void initComponents() {
         setLayout(new BorderLayout());
         add(createMainContent(), BorderLayout.CENTER);
-//        subjectComboBox = new JComboBox<>();
-//        refreshStudyComboBox();
     }
-
 
     private JPanel createMainContent() {
         JPanel main = new JPanel(new BorderLayout());
@@ -58,61 +48,57 @@ public class CreateSchedulePanel extends JPanel {
 
         contentPanel = new JPanel(new BorderLayout());
         contentPanel.add(createFormCardWithScroll(), BorderLayout.CENTER);
-        main.add(contentPanel, BorderLayout.CENTER);
 
+        main.add(contentPanel, BorderLayout.CENTER);
         return main;
     }
+
 
     private JPanel createHeader() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(new Color(246, 248, 250));
         header.setBorder(BorderFactory.createEmptyBorder(24, 32, 16, 32));
 
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        titlePanel.setOpaque(false);
-
         JLabel emojiLabel = new JLabel("⏰");
         emojiLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
         JLabel textLabel = new JLabel("일정 추가하기");
         textLabel.setFont(new Font("맑은 고딕", Font.BOLD, 28));
         textLabel.setForeground(new Color(99, 102, 241));
+
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titlePanel.setOpaque(false);
         titlePanel.add(emojiLabel);
         titlePanel.add(Box.createHorizontalStrut(8));
         titlePanel.add(textLabel);
-
         header.add(titlePanel, BorderLayout.WEST);
 
-        // 버튼 생성 및 이벤트 연결
         nextButton = new JButton("회의 가능 시간 입력  >");
-        nextButton.setFont(new Font("맑은 고딕", Font.BOLD, 14));
-        nextButton.setBackground(new Color(66, 133, 244));
-        nextButton.setForeground(Color.WHITE);
-        nextButton.setFocusPainted(false);
-        nextButton.setBorder(BorderFactory.createEmptyBorder(8, 18, 8, 18));
         nextButton.addActionListener(e -> {
+            handleCreate(); // 날짜와 시간 먼저 설정하고
             contentPanel.removeAll();
+            contentPanel.add(new CustomTimePanel(allGroups, loginService, studyManager, collectedSlots -> {
+                openGroupTimePanel(List.of(allGroups.get(0)));  // 예시: 첫 번째 그룹만 넘김
+            }));
 
-            if (createTimePanel == null) {
-                createTimePanel = new CreateTimePanel(studyManager, loginService);
-            } else {
-                createTimePanel.refreshData();
-            }
-
-            contentPanel.add(createTimePanel, BorderLayout.CENTER);
-
-            nextButton.setText(nextButton.getText().contains("입력")
-                    ? "최종 시간 확정"
-                    : "회의 가능 시간 재입력");
-
-            contentPanel.revalidate();
-            contentPanel.repaint();
+            revalidate();
+            repaint();
         });
 
-        // 버튼을 헤더 오른쪽에 추가
+
         header.add(nextButton, BorderLayout.EAST);
 
         return header;
     }
+
+    private void openGroupTimePanel(List<StudyGroup> studyGroups) {
+        contentPanel.removeAll();
+        contentPanel.add(new CreateTimePanel(studyGroups, loginService, studyManager));
+        revalidate();
+        repaint();
+    }
+
+
+
 
 
     private JScrollPane createFormCardWithScroll() {
@@ -372,6 +358,14 @@ public class CreateSchedulePanel extends JPanel {
     private void handleCreate() {
         String selectedSubject = (String) subjectComboBox.getSelectedItem();
 
+        String selectedCount = (String) memberComboBox.getSelectedItem();
+        int participantCount = 0;
+        if (selectedCount != null && selectedCount.endsWith("명")) {
+            try {
+                participantCount = Integer.parseInt(selectedCount.replace("명", ""));
+            } catch (NumberFormatException ignored) {}
+        }
+
         User currentUser = loginService.getCurrentUser();
         if (currentUser == null) {
             JOptionPane.showMessageDialog(this, "로그인이 필요합니다.");
@@ -418,10 +412,28 @@ public class CreateSchedulePanel extends JPanel {
                 offlineRadio.isSelected() ? "오프라인" : "혼합";
 
         JOptionPane.showMessageDialog(this,
-                "새 회의 일정이 생성되었습니다!\n" +
-                        "과목: " + selectedGroup.getSubject() + "\n" +
-                        "참여 인원: " + memberComboBox.getSelectedItem() + "\n" +
-                        "진행 방식: " + studyMode);
+                "새 회의 일정이 생성되었습니다!\n"
+                        + "과목: " + selectedGroup.getSubject() + "\n"
+                        + "참여 인원: " + participantCount + "명\n"
+                        + "진행 방식: " + selectedGroup.getMode());
+
+// ✅ 자동으로 CreateTimePanel로 이동
+        SwingUtilities.invokeLater(() -> {
+            contentPanel.removeAll();
+            contentPanel.add(new CustomTimePanel(
+                    studyManager.getAllStudyGroups(),
+                    loginService,
+                    studyManager,
+                    collectedSlots -> {
+                        contentPanel.removeAll();
+                        contentPanel.add(new CreateTimePanel(
+                                studyManager.getAllStudyGroups(), loginService, studyManager));
+                        contentPanel.revalidate();
+                        contentPanel.repaint();
+                    }));
+            contentPanel.revalidate();
+            contentPanel.repaint();
+        });
     }
 
 

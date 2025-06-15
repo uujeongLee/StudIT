@@ -13,6 +13,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.io.File;
+
 
 public class Main extends JFrame implements SidebarPanel.MenuSelectionListener{
     private final Login loginService;
@@ -37,10 +39,19 @@ public class Main extends JFrame implements SidebarPanel.MenuSelectionListener{
     }
 
     private void initializeTestData() {
+        // Main.java의 initializeTestData() 제일 위에 추가
+        new File("availability.dat").delete();
+
         loginService.register("눈송이", "20231234", "IT공학전공", "studit@gmail.com", "password");
         User snowUser = loginService.getUserByEmail("studit@gmail.com");
         if (snowUser != null) snowUser.getProfile().getInterests().addAll(Set.of("자바", "객체", "백엔드"));
 
+        studyManager.getUserAvailabilityStore().put("20231111", Set.of(
+                new TimeSlot("수", "20:30-21:00"),
+                new TimeSlot("수", "21:00-21:30")
+        ));
+
+        // StudyGroup 생성 시 timeSlots 전달 X → 빈 Set 또는 null
         studyManager.createStudyGroup(
                 "자바 스터디",
                 "온라인",
@@ -48,12 +59,7 @@ public class Main extends JFrame implements SidebarPanel.MenuSelectionListener{
                 5,
                 new User("김순헌", "20231111", "컴퓨터공학"),
                 "자바 기초 스터디 그룹",
-                Set.of(
-                        new TimeSlot("월", "10:00"),
-                        new TimeSlot("월", "11:00"),
-                        new TimeSlot("수", "10:00"),
-                        new TimeSlot("수", "11:00")
-                )
+                null // 또는 Collections.emptySet()
         );
 
         // 알고리즘 스터디: 정원 5명, 멤버 4명(리더+3)
@@ -93,6 +99,8 @@ public class Main extends JFrame implements SidebarPanel.MenuSelectionListener{
         backendGroup.apply(new User("멤버D", "20233334", "인공지능공학"));
         backendGroup.apply(new User("멤버E", "20233335", "인공지능공학"));
         backendGroup.apply(new User("멤버F", "20233336", "인공지능공학"));
+
+        studyManager.saveToFile();
     }
 
 
@@ -205,6 +213,9 @@ public class Main extends JFrame implements SidebarPanel.MenuSelectionListener{
                 createSchedulePanel.repaint();
             }
         });
+
+        System.out.println("지금 로그인한 사용자 ID: " + user.getStudentId());
+
     }
 
     private void refreshAllPanels() {
@@ -260,6 +271,7 @@ public class Main extends JFrame implements SidebarPanel.MenuSelectionListener{
                 homePanel.refreshData();
             }
         });
+
     }
 
     public static void main(String[] args) {
